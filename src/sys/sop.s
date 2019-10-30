@@ -56,6 +56,10 @@ dsls = 0707144			" DSK: load status
 dssf = 0707121			" DSK: skip on flags
 dsrs = 0707132			" DSK: read status register
 
+jkld = 0704624			" JK:  load block address
+jkrd = 0704612			" JK:  read word
+jkwr = 0704604			" JK:  write word
+
 iof = 0700002			" PIC: interrupts off
 ion = 0700042			" PIC: interrupts on
 caf = 0703302			" CPU: clear all flags

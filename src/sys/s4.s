@@ -56,7 +56,8 @@ free: 0
    jmp free i		" Return from the routine
 t = t+1
 
-	" "load ac indirect"
+	" load AC indirect (without using indirect!)
+	" need to avoid use of indirect in interrupt service routines
 	" AC/ address
 	"   jms laci
 	" AC/ contents of address
@@ -142,7 +143,7 @@ copyz: 0
 t = t+1
 
 	" Character queue management routines
-	" (CALLED FROM PI: USE OF INDIRECT AVOIDED TO AVOID DISK DMA UNDERRUN)
+	" (CALLED FROM PI: USE OF INDIRECT AVOIDED!)
 
 	" Queue numbers:
 	"  0: free list
@@ -311,7 +312,7 @@ dskrd: 0
    jms srcdbs			" in memory?
       jmp 1f			"  yes
    lac dskaddr			" no: read from disk
-   jms dskio; 06000
+   jms dskio; 06000		
    jmp 2f
 1:
    dzm 9f+t+1 i
@@ -341,68 +342,61 @@ t = t+3
 	"   jms dskio; DSLD_BITS
 dskio: 0
    dac dskaddr
-   cll; idiv; 80
-   dac 9f+t
-   lacq
-   idiv; 10
-   dac 9f+t+1
-   lls 22
-   xor 9f+t+1
-   als 8
-   dac 9f+t+1
-   lac 9f+t
-   idiv; 10
-   dac 9f+t
-   lls 22
-   xor 9f+t
-   xor 9f+t+1
-   xor o200000
+   tad d8000	" start at logical block 8000
    dac 9f+t
    jms dsktrans; -64; dskbuf; 9f+t; dskio
    isz dskio
    jmp dskio i
-t = t+1
+t = t+2
 
 	" perform disk I/O (both filesystem buffer and swapping)
 	" passed physical (BCD) disk address
-	" waits for disk interrupt: no overlapped operation
-	" to avoid disk DMA underrun
 	" called:
-	"   jms dsktrans; -words; mem_addr; disk_addr_ptr; op_ptr_ptr
+	"   jms dsktrans; -WC; MAC; addr_ptr; dsld_ptr
 dsktrans: 0
-   -10				" set retry counter
-   dac 9f+t
-1:
    -1
-   tad dsktrans			" get arg pointer
+   tad dsktrans
    dac 12			" store as auto-index
 "** 01-s1.pdf page 26
-   dscs				" clear status register
-   lac 12 i			" pick up word count
-   dslw				" load WC
-   lac 12 i			" pick up memory address
-   dslm				" load MAC
-   lac 12 i			" get disk_addr_ptr
-   jms laci			" get disk address
-   dsld				" load BCD track and sector (TA & SA)
-   dzm .dskb			" clear disk interrupt indicator
-   lac 12 i			" load status (op) pointer pointer
+   lac 12 i
+   dac 9f+t			" stow word count
+   lac 12 i
+   dac 9f+t+1			" stow memory address
+   lac 12 i
    jms laci			" fetch pointer
+   jkld				" load JK disk address
+
+   lac 12 i
+   jms laci			" fetch operation (read/write) ptr
    jms laci			" fetch op
-   dsls				" load status register (sets busy, int enb)
-   lac .dskb			" check for interrupt
-   sna
-   jmp .-2			" loop until interrupt seen
-   lac .dske			" get status from interrupt
-   sma
+
+   sad o7000
+   jmp 2f			" this is a write
+   
+   " do a read operation
+1:
+   jkrd				" read next word
+   dac i 9f+t+1			" store it
+   isz 9f+t+1			" move to next address
+   isz 9f+t			" increment counter
+   jmp 1b			" do it again
+   jmp 3f			" done
+ 
+   " do a write operation 
+2: 
+   lac i 9f+t+1			" read word from memory
+   jkwr				" write to disk
+   isz 9f+t+1
+   isz 9f+t			" as above
+   jmp 2b			" do it again
+
+3:			 
    jmp 12 i			" return
-   isz 9f+t			" increment retry counter
-   jmp 1b			"  less than 10 tries: try again
-   jms halt " 10 disk errors
-t = t+1
+
+t = t+2
 
 halt: 0
-   isz 9f+t			" spin for a while (process interrupts?)
+   isz 9f+t			" spin for a while (process interrupts)
    jmp .-1
    iof				" disable interrupts
    hlt				" halt

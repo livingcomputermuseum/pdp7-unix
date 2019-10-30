@@ -24,7 +24,7 @@ BINDIR=bin
 TESTDIR=tests
 BINARIES=../binaries/
 
-all: cmd others a.out boot.rim image.fs
+all: cmd others a.out boot.rim jkboot.rim image.fs
 
 # Make alternative everything: no dd but . and ..
 alt: altcmd altothers boot.rim alt/a.out alt/image.fs
@@ -69,6 +69,11 @@ alt/a.out: $(ALTSYS)
 # Phil's bootstrap code
 boot.rim: $(SYSSRC)/sop.s $(OTHERSRC)/pbboot.s
 	$(AS) -f rim -o boot.rim $(SYSSRC)/sop.s $(OTHERSRC)/pbboot.s
+
+# Josh's bootstrap code
+jkboot.rim: $(SYSSRC)/sop.s $(OTHERSRC)/jkboot.s
+	$(AS) -f rim -o jkboot.rim $(SYSSRC)/sop.s $(OTHERSRC)/jkboot.s
+	$(AS) -n -f list -o jkboot.lst $(SYSSRC)/sop.s $(OTHERSRC)/jkboot.s
 
 # Cold boot Unix kernel: attempts to build a minimal filesystem.
 # Don't use this one!
