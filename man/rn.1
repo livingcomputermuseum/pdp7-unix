@@ -1,26 +1,23 @@
 .oh '11/3/70''RN(I)'
 .ta 18 31
-NAME	rn -- rename a file
+NAME	rn -- rename files
 .sp
 SYNOPSIS	
 .ul
 rn
-name1 name2
+from to ...
 .sp
-DESCRIPTION	
-.ul
-mv
-changes the name of name with the rename
-	system call.
+DESCRIPTION	Files are taken in pairs; The file from
+	is renamed to to, and so on...
 .sp
 FILES	--
 .sp
-SEE ALSO	--
+SEE ALSO	cp
 .sp
 DIAGNOSTICS
 	"? file"	- either unable to remove or create
 		  a file
 .sp 
-BUGS	The second diagnostic is ambiguous.
+BUGS	The diagnostic is ambiguous.
 .sp
 OWNER	ken, dmr
